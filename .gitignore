@@ -1,0 +1,47 @@
+# ================= 
+# DEPENDENȚE (Niciodată nu se urcă pe GitHub)
+# =================
+node_modules/
+.pnp
+.pnp.js
+
+# ================= 
+# NEXT.JS (Frontend)
+# =================
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# ================= 
+# NODE.JS / BUILD (Backend)
+# =================
+backend/dist/
+backend/build/
+
+# ================= 
+# VARIABILE DE MEDIU & SECRETE (CRITIC: Nu se urcă niciodată parolele/cheile API!)
+# =================
+.env
+.env.local
+.env.development.local
+.env.production.local
+.env*.local
+backend/.env
+frontend/.env.local
+
+# ================= 
+# LOG-URI ȘI FIȘIERE DE SISTEM
+# =================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+.DS_Store
+Thumbs.db
+
+# ================= 
+# EDITOR DE COD (VS Code)
+# =================
+.vscode/
+.idea/
