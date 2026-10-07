@@ -1,0 +1,45 @@
+{
+  "createdAt": "2026-10-07T20:35:47.023Z",
+  "note": "Transformari primite din estimator (Three.js matrixWorld). Geometria este centrată înainte de aplicarea matricii. La export se convertește din coordonate Three.js (Y-up) în coordonate slicer (Z-up). Se poate exporta opțional și un STL de ansamblu (ASAMBLU_TRANSFORMAT.stl) care păstrează pozițiile relative dintre mai multe piese.",
+  "files": [
+    {
+      "serverFileName": "1791405332142-baiecred.stl",
+      "originalName": "baiecred.stl",
+      "transform": {
+        "matrixWorld": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          5,
+          0,
+          1
+        ],
+        "position": {
+          "x": 0,
+          "y": 5,
+          "z": 0
+        },
+        "rotationDeg": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        }
+      }
+    }
+  ]
+}

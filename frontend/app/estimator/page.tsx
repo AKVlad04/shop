@@ -27,6 +27,7 @@ import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
+import { takePendingEstimatorFile } from "@/lib/pendingEstimatorFile";
 
 type ColorOption = { name: string; hex: string; available: boolean };
 type ModelItem = {
@@ -59,7 +60,6 @@ type ApiResponse = {
   msg?: string;
   serverFileName?: string;
   volume_cm3?: number;
-  checkoutUrl?: string;
 };
 
 const BED_MM = 200;
@@ -407,6 +407,11 @@ export default function EstimatorPage() {
   const [selectedInfill, setSelectedInfill] = useState(20);
   const [orientationPreference, setOrientationPreference] = useState<"estimator" | "slicer">("estimator");
   const [orderNotes, setOrderNotes] = useState("");
+  const [customerFirstName, setCustomerFirstName] = useState("");
+  const [customerLastName, setCustomerLastName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [shippingAddress, setShippingAddress] = useState("");
   const [scaleInput, setScaleInput] = useState("100");
   const [transformMode, setTransformMode] = useState<"translate" | "rotate">("translate");
   const [supportsEnabled, setSupportsEnabled] = useState(false);
@@ -428,6 +433,8 @@ export default function EstimatorPage() {
 
   const mountRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const processFilesRef = useRef<((files: File[]) => Promise<void>) | null>(null);
+  const pendingImportHandledRef = useRef(false);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -961,8 +968,7 @@ export default function EstimatorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [models, activeModelIndex, selectedColor, supportsEnabled, supportsAngleDeg, viewerRevision]);
 
-  const handleFileSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
+  const processFiles = async (files: File[]) => {
     if (!files.length) return;
     setFileMenuOpen(false);
     setErrorMessage("");
@@ -1036,8 +1042,12 @@ export default function EstimatorPage() {
       setErrorMessage(message);
     } finally {
       setIsCalculating(false);
-      event.target.value = "";
     }
+  };
+  const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    void processFiles(files);
   };
 
   const calculateOffer = async (modelsToCalculate: ModelItem[] = modelsRef.current) => {
@@ -1098,6 +1108,30 @@ export default function EstimatorPage() {
       setIsCalculating(false);
     }
   };
+
+  useEffect(() => {
+    processFilesRef.current = processFiles;
+  });
+
+  useEffect(() => {
+    if (pendingImportHandledRef.current) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("upload") !== "1") return;
+
+    pendingImportHandledRef.current = true;
+    url.searchParams.delete("upload");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+
+    void takePendingEstimatorFile()
+      .then((file) => {
+        if (file) return processFilesRef.current?.([file]);
+        setErrorMessage("Fișierul selectat pe pagina principală nu mai este disponibil. Încarcă-l din nou.");
+      })
+      .catch((error: unknown) => {
+        console.error("Eroare la preluarea fișierului pentru estimator:", error);
+        setErrorMessage("Fișierul selectat nu a putut fi preluat. Încarcă-l direct din estimator.");
+      });
+  }, []);
 
   const changeScale = (value: number) => {
     if (!activeModel) return;
@@ -1370,6 +1404,16 @@ export default function EstimatorPage() {
       setErrorMessage("Cel puțin un model depășește patul de 20×20×20 cm. Micșorează-l înainte de comandă.");
       return;
     }
+    if (
+      !customerFirstName.trim()
+      || !customerLastName.trim()
+      || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())
+      || customerPhone.trim().length < 6
+      || shippingAddress.trim().length < 5
+    ) {
+      setErrorMessage("Completează numele, emailul, telefonul și adresa de livrare pentru comandă.");
+      return;
+    }
     setErrorMessage("");
     submissionInFlightRef.current = true;
     setIsSubmitting(true);
@@ -1420,17 +1464,21 @@ VALOARE COMANDĂ: ${quote.totalRounded} LEI
 ========================================`;
 
     const apiBase = (process.env.NEXT_PUBLIC_ESTIMATOR_API_BASE ?? "").replace(/\/+$/, "");
-    const configuredWindow = window as Window & { NEXUS3D_API_BASE?: string; NEXUS3D_CHECKOUT_MODE?: string };
+    const configuredWindow = window as Window & { NEXUS3D_API_BASE?: string };
     const baseUrl = apiBase || configuredWindow.NEXUS3D_API_BASE || "http://localhost:5000";
-    const isDraft = (configuredWindow.NEXUS3D_CHECKOUT_MODE || "server").toLowerCase() === "draft";
-    const endpoint = isDraft ? "/shopify/draft-order" : "/comanda";
     try {
-      const response = await fetch(`${baseUrl.replace(/\/+$/, "")}${endpoint}`, {
+      const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/comanda`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           offerText,
           amountLei: quote.totalRounded,
+          firstName: customerFirstName,
+          lastName: customerLastName,
+          email: customerEmail,
+          phone: customerPhone,
+          shippingAddress,
           color: selectedColor.name,
           infill: selectedInfill,
           scalePct,
@@ -1467,12 +1515,8 @@ VALOARE COMANDĂ: ${quote.totalRounded} LEI
       if (!response.ok || !result?.success) {
         throw new Error(result?.msg || result?.error || raw || `Trimiterea comenzii a eșuat (${response.status}).`);
       }
-      if (isDraft && result.checkoutUrl) {
-        window.location.assign(result.checkoutUrl);
-        return;
-      }
       setOrderSuccess(true);
-      setNotice("Comanda a fost înregistrată cu succes pe server.");
+      setNotice("Cererea de comandă a fost înregistrată. Te vom contacta pentru confirmare și plată.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Nu s-a putut trimite comanda.");
     } finally {
@@ -1806,6 +1850,30 @@ VALOARE COMANDĂ: ${quote.totalRounded} LEI
                         <div className="flex justify-between border-t border-white/10 pt-2"><span className="font-bold text-white">Total estimativ:</span><span className="text-xl font-black text-rose-300">{quote.totalRounded} Lei</span></div>
                       </div>
                       {!fitsBed && <p className="rounded-lg border border-red-400/30 bg-red-950/40 p-3 text-sm text-red-200">Micșorează modelele până încap pe patul de printare pentru a trimite comanda.</p>}
+                      <div className="grid gap-3 rounded-xl border border-white/10 bg-black/30 p-4 sm:grid-cols-2">
+                        <p className="sm:col-span-2 text-sm font-bold text-white">Date de contact și livrare</p>
+                        <label className="block text-xs text-neutral-300">
+                          Prenume
+                          <input autoComplete="given-name" required value={customerFirstName} onChange={(event) => setCustomerFirstName(event.target.value)} maxLength={100} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-rose-500/50" />
+                        </label>
+                        <label className="block text-xs text-neutral-300">
+                          Nume
+                          <input autoComplete="family-name" required value={customerLastName} onChange={(event) => setCustomerLastName(event.target.value)} maxLength={100} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-rose-500/50" />
+                        </label>
+                        <label className="block text-xs text-neutral-300">
+                          Email
+                          <input type="email" autoComplete="email" required value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} maxLength={254} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-rose-500/50" />
+                        </label>
+                        <label className="block text-xs text-neutral-300">
+                          Telefon
+                          <input type="tel" autoComplete="tel" required value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} maxLength={40} className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-rose-500/50" />
+                        </label>
+                        <label className="block text-xs text-neutral-300 sm:col-span-2">
+                          Adresa de livrare
+                          <textarea autoComplete="street-address" required value={shippingAddress} onChange={(event) => setShippingAddress(event.target.value)} maxLength={500} rows={2} className="mt-1.5 w-full resize-y rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-rose-500/50" />
+                        </label>
+                        <p className="sm:col-span-2 text-xs leading-5 text-neutral-400">Aceasta este o cerere de comandă, nu o plată online. Te vom contacta pentru confirmare și stabilirea plății.</p>
+                      </div>
                       <div className="flex justify-start gap-2 pt-1">
                         <button type="button" onClick={() => void handleSendOrder()} disabled={isSubmitting || orderSuccess || !fitsBed || models.some((model) => !model.serverStoredFileName)} className="flex items-center gap-1.5 rounded-full border border-rose-500/40 bg-gradient-to-r from-rose-900 to-rose-950 px-5 py-3 text-sm font-bold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-50">
                           <ShoppingCart size={16} />{isSubmitting ? "Se trimite..." : orderSuccess ? "Comandă trimisă" : "Trimite comanda"}

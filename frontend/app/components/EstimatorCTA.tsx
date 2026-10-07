@@ -1,9 +1,50 @@
 "use client";
 
+import { useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Box, Upload, ArrowRight, Sparkles, Cpu } from "lucide-react";
+import type { ChangeEvent, DragEvent } from "react";
+import { savePendingEstimatorFile } from "@/lib/pendingEstimatorFile";
 
 export function EstimatorCTA() {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [error, setError] = useState("");
+
+  const prepareEstimator = async (file: File) => {
+    setError("");
+    if (!file.name.toLowerCase().endsWith(".stl")) {
+      setError("Estimatorul acceptă momentan doar fișiere STL.");
+      return;
+    }
+
+    setIsPreparing(true);
+    try {
+      await savePendingEstimatorFile(file);
+      router.push("/estimator?upload=1");
+    } catch (uploadError) {
+      console.error("Eroare la pregătirea fișierului pentru estimator:", uploadError);
+      setError("Fișierul nu a putut fi pregătit. Încearcă să îl încarci direct din estimator.");
+      setIsPreparing(false);
+    }
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (file) void prepareEstimator(file);
+  };
+
+  const handleDrop = (event: DragEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    const file = event.dataTransfer.files[0];
+    if (file) void prepareEstimator(file);
+  };
+
   return (
     <section className="w-full max-w-6xl mx-auto px-4 py-16 relative">
       
@@ -47,24 +88,59 @@ export function EstimatorCTA() {
 
           {/* Dreapta: O previzualizare vizuală modernă (element tech/3d simulat) */}
           <div className="lg:col-span-5 flex justify-center">
-            <div className="relative w-full max-w-sm h-64 rounded-2xl bg-black/40 border border-white/10 p-6 flex flex-col items-center justify-center text-center backdrop-blur-md group hover:border-rose-500/40 transition-all duration-500 shadow-inner">
-              
-              {/* Iconiță centrală animată / stilizată */}
-              <div className="w-16 h-16 rounded-2xl bg-rose-950/60 border border-rose-500/30 flex items-center justify-center mb-4 text-rose-400 shadow-[0_0_20px_rgba(225,29,72,0.3)] group-hover:scale-110 transition-transform duration-500">
-                <Box size={32} strokeWidth={1.5} />
-              </div>
+            <div className="w-full max-w-sm">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".stl,model/stl"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                onDragEnter={(event) => {
+                  event.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragOver={(event) => event.preventDefault()}
+                onDragLeave={(event) => {
+                  if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) {
+                    setIsDragging(false);
+                  }
+                }}
+                onDrop={handleDrop}
+                disabled={isPreparing}
+                aria-label="Selectează sau trage aici un fișier STL pentru estimare"
+                className={`group relative flex h-64 w-full flex-col items-center justify-center rounded-2xl border bg-black/40 p-6 text-center shadow-inner backdrop-blur-md transition-all duration-300 disabled:cursor-wait ${
+                  isDragging
+                    ? "border-rose-400 bg-rose-950/30 shadow-[0_0_30px_rgba(225,29,72,0.25)]"
+                    : "border-white/10 hover:border-rose-500/40"
+                }`}
+              >
+                {/* Iconiță centrală animată / stilizată */}
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-rose-500/30 bg-rose-950/60 text-rose-400 shadow-[0_0_20px_rgba(225,29,72,0.3)] transition-transform duration-500 group-hover:scale-110">
+                  <Box size={32} strokeWidth={1.5} />
+                </div>
 
-              <div className="space-y-1">
-                <p className="text-white font-bold text-sm tracking-wide">Trage fișierul STL aici</p>
-                <p className="text-neutral-400 text-xs">Suportă STL, OBJ, 3MF</p>
-              </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold tracking-wide text-white">
+                    {isPreparing ? "Se deschide estimatorul..." : isDragging ? "Eliberează fișierul STL" : "Alege sau trage fișierul STL"}
+                  </p>
+                  <p className="text-xs text-neutral-400">Acceptă fișiere STL</p>
+                </div>
 
-              {/* Tag mic tehnic */}
-              <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.03] border border-white/5 text-[10px] font-mono text-neutral-400">
-                <Cpu size={12} className="text-rose-400" />
-                <span>AI Calculator</span>
-              </div>
-
+                {/* Tag mic tehnic */}
+                <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full border border-white/5 bg-white/[0.03] px-2.5 py-1 text-[10px] font-mono text-neutral-400">
+                  <Cpu size={12} className="text-rose-400" />
+                  <span>AI Calculator</span>
+                </div>
+              </button>
+              {error && (
+                <p role="alert" className="mt-3 text-center text-xs text-red-300">
+                  {error}
+                </p>
+              )}
             </div>
           </div>
 

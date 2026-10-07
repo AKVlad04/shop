@@ -1,0 +1,35 @@
+========================================
+          COMANDA NOUA
+========================================
+Data: 07.10.2026, 23:35:47
+Fișiere:
+- baiecred.stl × 1 → 1791405332142-baiecred.stl
+Fișiere transformate (rotit/scalat/mutat):
+- baiecred.stl × 1 (100%) → 1791405332142-baiecred_TRANSFORMED.stl
+Ansamblu (toate piesele la pozițiile relative):
+- ASAMBLU_TRANSFORMAT.stl
+----------------------------------------
+SPECIFICAȚII:
+- Material: PLA
+- Culoare: Roșu
+- Infill: Standard
+- Cantități:
+- baiecred.stl: 1 buc.
+- Orientare: Optimizare completă în Bambu Studio la pregătirea printului
+- Note:
+—
+- Scalare per piesă:
+- baiecred.stl: 100%
+- Timp printare: 56 min
+- Greutate estimată: 19.97 g
+- Volum: 39.07 cm3
+- Dimensiuni model activ: 12.9 x 1.0 x 4.5 cm
+----------------------------------------
+CALCUL PREȚ:
+- Material: 1.64 Lei (82 Lei/kg)
+- Uzură: 1.87 Lei (2 Lei/oră)
+- Manoperă: 10.00 Lei (fix)
+- Adaos 90%: 12.15 Lei
+----------------------------------------
+VALOARE COMANDĂ: 26 LEI
+========================================

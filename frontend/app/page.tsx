@@ -38,9 +38,23 @@ export default function Home() {
         </p>
 
         {/* Bara de Căutare pe care tocmai ai adus-o + Butoane de Acțiune */}
-        <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-4 max-w-lg mb-12">
-          <SearchInput containerClassName="w-full" />
-        </div>
+        <form
+          action="/produse"
+          method="get"
+          className="mb-12 flex w-full max-w-lg items-center justify-center gap-3"
+        >
+          <SearchInput
+            name="q"
+            label="Caută produse"
+            containerClassName="w-full"
+          />
+          <button
+            type="submit"
+            className="shrink-0 rounded-full border border-rose-500/30 bg-gradient-to-r from-rose-900 to-rose-950 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:scale-105 hover:border-rose-400/50"
+          >
+            Caută
+          </button>
+        </form>
 
         {/* Butoanele principale de navigare (Exact ca în stilul din poză) */}
         <div className="flex flex-wrap items-center justify-center gap-4">
@@ -48,7 +62,7 @@ export default function Home() {
             href="/produse"
             className="flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-gradient-to-r from-rose-900 to-rose-950 text-white font-semibold text-sm tracking-wide border border-rose-500/30 shadow-[0_0_25px_rgba(225,29,72,0.3)] hover:shadow-[0_0_35px_rgba(225,29,72,0.5)] hover:scale-105 transition-all duration-300"
           >
-            <span>Explorează Magazinul</span>
+            <span>Explorează produsele</span>
             <ArrowRight size={16} />
           </Link>
 
@@ -69,11 +83,11 @@ export default function Home() {
       {/* Secțiunea de Categorii Rapide (Grid Vizual - Nou adăugată) */}
       <CategoriesGrid />
 
-      {/* Secțiunea de Beneficii / USP cu efect de text adnotat */}
-      <WhyUs />
-
       {/* Secțiunea Estimator CTA (Noua secțiune adăugată) */}
       <EstimatorCTA />
+
+      {/* Secțiunea de Beneficii / USP cu efect de text adnotat */}
+      <WhyUs />
 
       {/* Footer-ul Modern Legal */}
       <Footer />
