@@ -1,0 +1,35 @@
+========================================
+          COMANDA NOUA
+========================================
+Data: 07.10.2026, 21:04:37
+Fișiere:
+- baiecred.stl × 1 → 1791396253459-baiecred.stl
+Fișiere transformate (rotit/scalat/mutat):
+- baiecred.stl × 1 (100%) → 1791396253459-baiecred_TRANSFORMED.stl
+Ansamblu (toate piesele la pozițiile relative):
+- ASAMBLU_TRANSFORMAT.stl
+----------------------------------------
+SPECIFICAȚII:
+- Material: PLA
+- Culoare: Baby Blue
+- Infill: Solid
+- Cantități:
+- baiecred.stl: 1 buc.
+- Orientare: Optimizare completă în Bambu Studio la pregătirea printului
+- Note:
+—
+- Scalare per piesă:
+- baiecred.stl: 100%
+- Timp printare: 136 min
+- Greutate estimată: 48.45 g
+- Volum: 39.07 cm3
+- Dimensiuni model activ: 12.9 x 4.5 x 1.0 cm
+----------------------------------------
+CALCUL PREȚ:
+- Material: 3.97 Lei (82 Lei/kg)
+- Uzură: 4.53 Lei (2 Lei/oră)
+- Manoperă: 10.00 Lei (fix)
+- Adaos 90%: 16.66 Lei
+----------------------------------------
+VALOARE COMANDĂ: 36 LEI
+========================================
